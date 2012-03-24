@@ -13,6 +13,7 @@ import java.util.List;
 
 import org.bukkit.entity.Player;
 
+// The class to handle all of the database calls
 public class DBHandler {
 	Connection conn;
 	Statement stat;

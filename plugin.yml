@@ -1,0 +1,12 @@
+name: DeathPenalty
+main: com.verybigcorp.deathpenalty.DeathPenalty
+version: 2.0
+commands:
+   dp: 
+      description: DeathPenalty
+      permission: 
+      usage:
+   timeleft: 
+      description: Get the time left if you're a ghost
+      permission: 
+      usage:

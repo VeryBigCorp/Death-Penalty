@@ -18,6 +18,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
@@ -38,7 +39,6 @@ import org.bukkit.event.player.PlayerLoginEvent;
 import org.bukkit.event.player.PlayerLoginEvent.Result;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerPickupItemEvent;
-import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.event.player.PlayerTeleportEvent.TeleportCause;
@@ -75,7 +75,7 @@ public class DeathPenalty extends JavaPlugin {
 		getConfig().set("disablePortals", getConfig().getBoolean("disablePortals"));
 		getConfig().set("ghostsFly",getConfig().getBoolean("ghostsFly"));
 		getConfig().set("lives", getConfig().getInt("lives"));
-		getConfig().set("maxGhostTimes",getConfig().getInt("maxGhostTimes", -1));
+		getConfig().set("maxGhostTimes",getConfig().getInt("maxGhostTimes", 0));
 		getConfig().set("banOnGhostLifeDepletion", getConfig().getBoolean("banOnGhostLifeDepletion", false));
 		getConfig().set("banTime", getConfig().getInt("banTime"));
 		getConfig().set("permaGhost", getConfig().getBoolean("permaGhost"));
@@ -179,6 +179,26 @@ public class DeathPenalty extends JavaPlugin {
 						}
 						return true;
 					}
+				} else if(args[0].equalsIgnoreCase("fixghosts")){
+					if(!(sender instanceof Player)){
+						try {
+							hideGhosts();
+							log("Ghosts are now hidden.");
+						} catch (SQLException e) {
+							log("Unable to fix ghosts. Please try again or report this error.");
+						}
+					}
+				} else if(args[0].equalsIgnoreCase("reload")){
+					if(sender instanceof Player)
+						return false;
+					try {
+						relSpawn();
+						reloadConfig();
+						sender.sendMessage("Configuration reloaded.");
+						
+					} catch (IOException e) {
+						
+					}
 				}
 			} else if(args.length == 2){
 				if(args[0].equalsIgnoreCase("resurrect") && ((sender instanceof Player && hasPermission((Player)sender, "deathpenalty.resurrect", false)) || !(sender instanceof Player))){
@@ -265,38 +285,24 @@ public class DeathPenalty extends JavaPlugin {
 		}
 		
 		@EventHandler
-		public void onPlayerQuit(PlayerQuitEvent e){
-			try {
-				if(db.isBanned(e.getPlayer().getName())){
-					e.setQuitMessage(null);
-				}
-			} catch (SQLException e1) {
-				
-			}
-		}
-		
-		@EventHandler
 		public void onPlayerDeath(PlayerDeathEvent e){
 			final PlayerDeathEvent e1 = e;
 			new Thread(new Runnable(){
 
 				@Override
 				public void run() {
-					// TODO Auto-generated method stub
-					try {
-						if(db.isGhost(e1.getEntity()))
-							return;
-					} catch (SQLException e2) {
-						
-					}
+					if(db.isGhost(e1.getEntity()))
+						return;
 					if(hasPermission(e1.getEntity(), "deathpenalty.ignore", false))
 						return;
 		            try {
+		            	
 						if(db.decrementLives(e1.getEntity().getName()) <= 0){
 							db.addGhost(e1.getEntity().getName());
 							hideGhost(e1.getEntity().getName());
 				            e1.getEntity().sendMessage(ChatColor.GRAY + "You have become a ghost of your former self. To see how much time you have left, type in /timeleft");
-				            db.increaseGhostTimes(e1.getEntity().getName());
+				            if(getConfig().getBoolean("banOnGhostLifeDepletion"))
+				            	db.increaseGhostTimes(e1.getEntity().getName());
 						} else {
 							int lives = db.nLives(e1.getEntity().getName());
 							String life = " lives";
@@ -304,8 +310,9 @@ public class DeathPenalty extends JavaPlugin {
 								life = " life";
 							e1.getEntity().sendMessage(ChatColor.GRAY + "You have "+ lives + life + " left.");
 						}
+
 						
-						if(db.getGhostTimesLeft(e1.getEntity().getName()) >= getConfig().getInt("maxGhostTimes") && getConfig().getBoolean("banOnGhostLifeDepletion")){
+						if(db.getGhostTimesLeft(e1.getEntity().getName()) > getConfig().getInt("maxGhostTimes") && getConfig().getBoolean("banOnGhostLifeDepletion")){
 							revealGhost(e1.getEntity().getName());
 							db.ban(e1.getEntity().getName());
 							e1.getEntity().kickPlayer("You have died. You may rejoin in " + formatSeconds(db.banTimeLeft(e1.getEntity().getName())));
@@ -324,16 +331,12 @@ public class DeathPenalty extends JavaPlugin {
 		@EventHandler
 		public void onEntityTarget(EntityTargetEvent e){
 			if(e.getTarget() instanceof Player){
-				try {
-					if(db.isGhost((Player)e.getTarget()))
-						e.setTarget(null);
-				} catch (SQLException e1) {
-					
-				}
+				if(db.isGhost((Player)e.getTarget()))
+					e.setTarget(null);
 			}
 		}
 		
-		@EventHandler
+		@EventHandler(priority = EventPriority.HIGHEST)
 		public void onPlayerRespawn(final PlayerRespawnEvent e){
 				try {
 					if(db.isGhost(e.getPlayer()) && !isNull){
@@ -341,7 +344,7 @@ public class DeathPenalty extends JavaPlugin {
 						if(getConfig().getBoolean("ghostsFly"))
 							e.getPlayer().setGameMode(GameMode.CREATIVE);
 					}
-					if(db.getGhostTimesLeft(e.getPlayer().getName()) > getConfig().getInt("maxGhostTimes") && !getConfig().getBoolean("banOnGhostLifeDepletion"))
+					if(db.getGhostTimesLeft(e.getPlayer().getName()) > getConfig().getInt("maxGhostTimes") || !getConfig().getBoolean("banOnGhostLifeDepletion"))
 						db.resetLives(e.getPlayer().getName());
 				} catch (SQLException e1) {
 					
@@ -351,34 +354,22 @@ public class DeathPenalty extends JavaPlugin {
 	
 		@EventHandler
 		public void onPlayerExpChange(PlayerExpChangeEvent e){
-			try {
-				if(db.isGhost(e.getPlayer())){
-					e.setAmount(0);
-				}
-			} catch (SQLException e1) {
-				
+			if(db.isGhost(e.getPlayer())){
+				e.setAmount(0);
 			}
 		}
 		
 		@EventHandler
 		public void onPlayerDropItem(PlayerDropItemEvent e) {
-			try {
-				if(db.isGhost(e.getPlayer())){
-					e.setCancelled(true);
-				}
-			} catch (SQLException e1) {
-				
+			if(db.isGhost(e.getPlayer())){
+				e.setCancelled(true);
 			}
 		}
 		
 		@EventHandler
 		public void onBlockPlace(BlockPlaceEvent e){
-			try {
-				if(db.isGhost(e.getPlayer())){
-					e.setCancelled(true);
-				}
-			} catch (SQLException e1) {
-				
+			if(db.isGhost(e.getPlayer())){
+				e.setCancelled(true);
 			}
 		}
 		
@@ -395,12 +386,8 @@ public class DeathPenalty extends JavaPlugin {
 		
 		@EventHandler
 		public void onBlockBreak(BlockBreakEvent e){
-			try {
-				if(db.isGhost(e.getPlayer())){
-					e.setCancelled(true);
-				}
-			} catch (SQLException e1) {
-				
+			if(db.isGhost(e.getPlayer())){
+				e.setCancelled(true);
 			}
 		}
 		
@@ -411,7 +398,7 @@ public class DeathPenalty extends JavaPlugin {
 						if(e.getAction() == Action.RIGHT_CLICK_BLOCK){
 							if(e.getClickedBlock().getType().equals(Material.CAKE_BLOCK) && !db.hasEaten(e.getPlayer().getName()) && getConfig().getInt("cakeAmount") > 0 && !getConfig().getBoolean("permaGhost")){
 								db.setHasEaten(e.getPlayer().getName());
-								e.getPlayer().sendMessage(ChatColor.GRAY + "Your ghost time has decreased by " + getConfig().getInt("cakeAmount") + " seconds!");
+								e.getPlayer().sendMessage(ChatColor.GRAY + "Your ghost time has decreased by " + formatSeconds(getConfig().getInt("cakeAmount")) + " seconds!");
 								if(db.decrementTime(e.getPlayer().getName(), getConfig().getInt("cakeAmount")) <= 0){
 									if(getPlayer(e.getPlayer().getName()) != null){
 										getPlayer(e.getPlayer().getName()).sendMessage(ChatColor.GRAY + "Your time is up. Move to be resurrected. " + resAppend(e.getPlayer().getName()));
@@ -428,12 +415,8 @@ public class DeathPenalty extends JavaPlugin {
 		
 		@EventHandler
 		public void onPlayerInteractEntity(PlayerInteractEntityEvent e){
-			try {
-				if(db.isGhost(e.getPlayer()))
-					e.setCancelled(true);
-			} catch (SQLException e1) {
-				
-			}
+			if(db.isGhost(e.getPlayer()))
+				e.setCancelled(true);
 		}
 		
 		/*@EventHandler
@@ -462,8 +445,8 @@ public class DeathPenalty extends JavaPlugin {
 								getPlayer(pl.getName()).sendMessage("You have been reinstated as a person.");
 								synchronized (this){
 									getPlayer(pl.getName()).teleport(res(getPlayer(pl.getName())));
+									revealGhost(pl.getName());
 								}
-								revealGhost(pl.getName());
 							}
 						}
 					} catch (SQLException e1) {
@@ -476,92 +459,69 @@ public class DeathPenalty extends JavaPlugin {
 		
 		@EventHandler
 		public void onCraftItem(CraftItemEvent e){
-			try {
-				if(db.isGhost(getServer().getPlayer(e.getWhoClicked().getName()))){
-					e.setCancelled(true);
-				}
-			} catch (SQLException e1) {
-				
+			if(db.isGhost(getServer().getPlayer(e.getWhoClicked().getName()))){
+				e.setCancelled(true);
 			}
 		}
 		
 		@EventHandler
 		public void onPlayerPickupItem(PlayerPickupItemEvent e){
-			try {
-				if(db.isGhost(e.getPlayer())){
-					e.setCancelled(true);
-				}
-			} catch (SQLException e1) {
-				
+			if(db.isGhost(e.getPlayer())){
+				e.setCancelled(true);
 			}
 		}
 		
 		@EventHandler
 		public void onEntityDamageByEntity(EntityDamageByEntityEvent e){
-			try {
-				if(e.getDamager() instanceof Player && db.isGhost((Player)e.getDamager())){
-					e.setCancelled(true);
-				}
-			} catch (SQLException e1) {
-				
+			if(e.getDamager() instanceof Player && db.isGhost((Player)e.getDamager())){
+				e.setCancelled(true);
 			}
 		}
 		
 		@EventHandler
 		public void onPlayerCommandPreprocess(PlayerCommandPreprocessEvent e){
 			if(!e.getMessage().equals("/timeleft")){
-				try {
-					if(db.isGhost(e.getPlayer()))
-						e.setCancelled(true);
-				} catch (SQLException e1) {
-					
-				}
+				if(db.isGhost(e.getPlayer()))
+					e.setCancelled(true);
 			}
 		}
 		
 		@EventHandler
 		public void onEntityDamage(EntityDamageEvent e){
-			try {
-				if(e.getEntity() instanceof Player && db.isGhost((Player)e.getEntity())){
-					e.setCancelled(true);
-				}
-			} catch (SQLException e1) {
-				
+			if(e.getEntity() instanceof Player && db.isGhost((Player)e.getEntity())){
+				e.setCancelled(true);
 			}
 		}
 		
 		@EventHandler
 		public void onPlayerChat(PlayerChatEvent e){
-			try {
-				if(db.isGhost(e.getPlayer())){
-					for(World w : getServer().getWorlds())
-						for(Player pl : w.getPlayers())
-							if(db.isGhost(pl) || hasPermission(pl, "deathpenalty.hearghosts", true))
-								pl.sendMessage("[Ghost of "+e.getPlayer().getDisplayName()+  "] " + ChatColor.GRAY + e.getMessage());
-					e.setCancelled(true);
-				}
-			} catch (SQLException e1) {
-				
+			if(db.isGhost(e.getPlayer())){
+				for(World w : getServer().getWorlds())
+					for(Player pl : w.getPlayers())
+						if(db.isGhost(pl) || hasPermission(pl, "deathpenalty.hearghosts", true))
+							pl.sendMessage("[Ghost of "+e.getPlayer().getDisplayName()+  "] " + ChatColor.GRAY + e.getMessage());
+				e.setCancelled(true);
 			}
 		}
 		
 		@EventHandler
 		public void onPlayerTeleport(PlayerTeleportEvent e){
-			try {
-				if(db.isGhost(e.getPlayer()) && getConfig().getBoolean("disablePortals") && e.getCause().equals(TeleportCause.END_PORTAL) || e.getCause().equals(TeleportCause.NETHER_PORTAL))
-					e.setCancelled(true);
-			} catch (SQLException e1) {
-				
-			}
+			if(db.isGhost(e.getPlayer()) && getConfig().getBoolean("disablePortals") && e.getCause().equals(TeleportCause.END_PORTAL) || e.getCause().equals(TeleportCause.NETHER_PORTAL))
+				e.setCancelled(true);
 		}
 		
 	}
 	
 	public String resAppend(String p) throws SQLException{
 		String s = "";
-		if(getConfig().getBoolean("banOnGhostLifeDepletion"))
-			s = "You may be a ghost " + (getConfig().getInt("maxGhostTimes") - db.getGhostTimesLeft(p)-1) + " more time(s).";
-		return s;
+		int tleft = getConfig().getInt("maxGhostTimes") - db.getGhostTimesLeft(p);
+		if(getConfig().getBoolean("banOnGhostLifeDepletion")){
+			String time = "times";
+			if(tleft == 1)
+				time = "time";
+			s = "You may be a ghost " + (tleft < 0 ? 0 : tleft) + " more " + time + ".";
+		}
+		return s != "" ? tleft == 0 ? "Once you're out of lives, you will be banned." + "" : s : "";
 	}
 	
 	public Location res(Player p){
@@ -624,8 +584,8 @@ public class DeathPenalty extends JavaPlugin {
 	
 	
 	public Player getPlayer(String name){
-		//Player pl = null;
-		/*for(int x = 0; x < getServer().getWorlds().size(); x++){
+		/*Player pl = null;
+		for(int x = 0; x < getServer().getWorlds().size(); x++){
 			for(int y = 0; y < getServer().getWorlds().get(x).getPlayers().size(); y++)
 				if(getServer().getWorlds().get(x).getPlayers().get(y).getName().equalsIgnoreCase(name))
 					pl = getServer().getWorlds().get(x).getPlayers().get(y);
@@ -640,14 +600,15 @@ public class DeathPenalty extends JavaPlugin {
 				arr[x].hidePlayer(getPlayer(s));
 	}
 	
-	public void revealGhost(String s) throws SQLException{
+	public void revealGhost(String s) throws SQLException {
 		Player[] arr = getServer().getOnlinePlayers();
 		for(int x = 0; x < arr.length; x++)
 			if(getPlayer(arr[x].getName()) != null && !arr[x].canSee(getPlayer(s)))
 				arr[x].showPlayer(getPlayer(s));
-		if(getConfig().getBoolean("ghostsFly"))
+		if(getConfig().getBoolean("ghostsFly")){
 			getPlayer(s).setGameMode(GameMode.SURVIVAL);
-		getPlayer(s).getInventory().clear();
+			getPlayer(s).getInventory().clear();
+		}
 		db.resetLives(s);
 	}
 	

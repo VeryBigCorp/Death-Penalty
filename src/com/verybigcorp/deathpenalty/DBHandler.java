@@ -62,6 +62,7 @@ public class DBHandler {
 	// Ghost methods
 	
 	public void addGhost(String s) throws SQLException {
+		addCached(s);
 		PreparedStatement sql = conn.prepareStatement("UPDATE players SET isGhost=?, timeleft=?, hasEaten=? WHERE username=?;");
 		sql.setBoolean(1, true);
 		sql.setInt(2, plugin.getConfig().getInt("ghostTime"));
@@ -69,7 +70,6 @@ public class DBHandler {
 		sql.setString(4, s);
 		sql.execute();
 		sql.close();
-		cachedGhosts.add(s);
 	}
 	
 	public void addPlayer(String p) throws SQLException{
@@ -171,12 +171,13 @@ public class DBHandler {
 		sql.close();
 	}
 	
-	public boolean isGhost(Player p) throws SQLException {
+	public boolean isGhost(Player p) {
 		return cachedGhosts.contains(p.getName());
 	}
 	
 	
 	public void removeGhost(String s) throws SQLException {
+		removeCached(s);
 		String delete = "UPDATE players SET hasEaten=?, isGhost=? WHERE username=?;";
 		PreparedStatement sql = conn.prepareStatement(delete);
 		sql.setBoolean(1, false);
@@ -184,7 +185,6 @@ public class DBHandler {
 		sql.setString(3, s);
 		sql.executeUpdate();
 		sql.close();
-		cachedGhosts.remove(s);
 	}
 	
 	public int decrementLives(String s) throws SQLException{
@@ -237,7 +237,7 @@ public class DBHandler {
 	}
 	
 	public int increaseGhostTimes(String s) throws SQLException {
-		if(getGhostTimesLeft(s) < plugin.getConfig().getInt("maxGhostTimes")){
+		if(getGhostTimesLeft(s) <= plugin.getConfig().getInt("maxGhostTimes")){
 			PreparedStatement sql = conn.prepareStatement("UPDATE players SET ghostLives=? WHERE username=?;");
 			sql.setInt(1, getGhostTimesLeft(s)+1);
 			sql.setString(2, s);

@@ -4,6 +4,6 @@
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.6"/>
 	<classpathentry kind="lib" path="C:/Users/Ryan/Downloads/Bukkit API Snapshots/SQLite JDBC/sqlitejdbc-v056.jar"/>
 	<classpathentry kind="lib" path="C:/Users/Ryan/Desktop/Bukkit Testing Server/plugins/Permissions Plugins/PermissionsEx.jar"/>
-	<classpathentry kind="lib" path="C:/Users/Ryan/Desktop/Bukkit Testing Server/Versions/Beta_2034.jar"/>
+	<classpathentry kind="lib" path="C:/Users/Ryan/Desktop/Bukkit Testing Server/Versions/craftbukkit-1.2.5-R1.0.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

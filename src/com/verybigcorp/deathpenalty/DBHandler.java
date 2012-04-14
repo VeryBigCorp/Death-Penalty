@@ -19,7 +19,7 @@ public class DBHandler {
 	Statement stat;
 	DeathPenalty plugin;
 	List<String> cachedGhosts;
-	public static int VERSION = 2;
+	public static int VERSION = 3;
 	
 	public DBHandler(DeathPenalty p){
 		plugin = p;
@@ -44,14 +44,14 @@ public class DBHandler {
 	}
 	
 	public void removeCached(String s){
-		cachedGhosts.remove(s);
+		cachedGhosts.remove(s.toLowerCase());
 	}
 	
 	public void addCached(String s){
-		cachedGhosts.add(s);
+		cachedGhosts.add(s.toLowerCase());
 	}
 	
-	public void finalize(){
+	public void finish(){
 		try {
 			conn.close();
 		} catch (SQLException e) {
@@ -67,7 +67,7 @@ public class DBHandler {
 		sql.setBoolean(1, true);
 		sql.setInt(2, plugin.getConfig().getInt("ghostTime"));
 		sql.setBoolean(3, false);
-		sql.setString(4, s);
+		sql.setString(4, s.toLowerCase());
 		sql.execute();
 		sql.close();
 	}
@@ -75,13 +75,14 @@ public class DBHandler {
 	public void addPlayer(String p) throws SQLException{
 		if(getPlayers().contains(p))
 			return;
-		PreparedStatement sql = conn.prepareStatement("INSERT INTO players (username, isGhost, timeleft, hasEaten, lives, ghostLives) VALUES (?,?,?,?,?,?);");
-		sql.setString(1, p);
+		PreparedStatement sql = conn.prepareStatement("INSERT INTO players (username, isGhost, timeleft, hasEaten, lives, ghostLives, resMessageSent) VALUES (?,?,?,?,?,?,?);");
+		sql.setString(1, p.toLowerCase());
 		sql.setBoolean(2, false);
 		sql.setInt(3, 0);
 		sql.setBoolean(4, false);
 		sql.setInt(5, plugin.getConfig().getInt("lives"));
 		sql.setInt(6, 0);
+		sql.setBoolean(7, false);
 		sql.execute();
 		sql.close();
 	}
@@ -91,7 +92,7 @@ public class DBHandler {
 		String select = "SELECT username FROM players;";
 		ResultSet res = stat.executeQuery(select);
 		while(res.next()){
-			l.add(res.getString("username"));
+			l.add(res.getString("username").toLowerCase());
 		}
 		res.close();
 		return l;
@@ -103,7 +104,7 @@ public class DBHandler {
 		sql.setBoolean(1, true);
 		ResultSet res = sql.executeQuery();
 		while(res.next()){
-			l.add(res.getString("username"));
+			l.add(res.getString("username").toLowerCase());
 		}
 		res.close();
 		return l;
@@ -129,7 +130,7 @@ public class DBHandler {
 			if(getTimeLeft(p) > 0){
 				PreparedStatement sql = conn.prepareStatement("UPDATE players SET timeleft=? WHERE username=?;");
 				sql.setInt(1, getTimeLeft(p)-amt > 0 ? getTimeLeft(p)-amt : 0);
-				sql.setString(2, p);
+				sql.setString(2, p.toLowerCase());
 				sql.executeUpdate();
 				sql.close();
 			} else {
@@ -144,7 +145,7 @@ public class DBHandler {
 	
 	public int getTimeLeft(String p) throws SQLException {
 		PreparedStatement sql = conn.prepareStatement("SELECT * FROM players WHERE username=?;");
-		sql.setString(1, p);
+		sql.setString(1, p.toLowerCase());
 		ResultSet r = sql.executeQuery();
 		while(r.next()){
 			return r.getInt("timeleft");
@@ -155,7 +156,7 @@ public class DBHandler {
 	
 	public boolean hasEaten(String s) throws SQLException {
 		PreparedStatement sql = conn.prepareStatement("SELECT * FROM players WHERE username=?;");
-		sql.setString(1, s);
+		sql.setString(1, s.toLowerCase());
 		ResultSet r = sql.executeQuery();
 		while(r.next()){
 			return r.getBoolean("hasEaten");
@@ -166,13 +167,13 @@ public class DBHandler {
 	public void setHasEaten(String s) throws SQLException {
 		PreparedStatement sql = conn.prepareStatement("UPDATE players SET hasEaten=? WHERE username=?;");
 		sql.setBoolean(1, true);
-		sql.setString(2, s);
+		sql.setString(2, s.toLowerCase());
 		sql.executeUpdate();
 		sql.close();
 	}
 	
 	public boolean isGhost(Player p) {
-		return cachedGhosts.contains(p.getName());
+		return cachedGhosts.contains(p.getName().toLowerCase());
 	}
 	
 	
@@ -182,7 +183,7 @@ public class DBHandler {
 		PreparedStatement sql = conn.prepareStatement(delete);
 		sql.setBoolean(1, false);
 		sql.setBoolean(2, false);
-		sql.setString(3, s);
+		sql.setString(3, s.toLowerCase());
 		sql.executeUpdate();
 		sql.close();
 	}
@@ -191,16 +192,26 @@ public class DBHandler {
 		if(nLives(s) > 0){
 			PreparedStatement sql = conn.prepareStatement("UPDATE players SET lives=? WHERE username=?;");
 			sql.setInt(1, nLives(s)-1);
-			sql.setString(2, s);
+			sql.setString(2, s.toLowerCase());
 			sql.executeUpdate();
 			sql.close();
 		}
 		return nLives(s);
 	}
 	
+	public void increaseLives(String s) throws SQLException {
+		if(nLives(s) < plugin.getConfig().getInt("lives")){
+			PreparedStatement sql = conn.prepareStatement("UPDATE players SET lives=? WHERE username=?;");
+			sql.setInt(1, nLives(s)+1);
+			sql.setString(2, s.toLowerCase());
+			sql.executeUpdate();
+			sql.close();
+		}
+	}
+	
 	public int nLives(String s) throws SQLException {
 		PreparedStatement sql = conn.prepareStatement("SELECT * FROM players WHERE username=?;");
-		sql.setString(1, s);
+		sql.setString(1, s.toLowerCase());
 		ResultSet r = sql.executeQuery();
 		while(r.next()){
 			return r.getInt("lives");
@@ -212,14 +223,14 @@ public class DBHandler {
 	public void resetLives(String s) throws SQLException{
 		PreparedStatement sql = conn.prepareStatement("UPDATE players SET lives=? WHERE username=?;");
 		sql.setInt(1, plugin.getConfig().getInt("lives"));
-		sql.setString(2, s);
+		sql.setString(2, s.toLowerCase());
 		sql.executeUpdate();
 		sql.close();
 	}
 	
 	public int getGhostTimesLeft(String s) throws SQLException {
 		PreparedStatement sql = conn.prepareStatement("SELECT * FROM players WHERE username=?;");
-		sql.setString(1, s);
+		sql.setString(1, s.toLowerCase());
 		ResultSet r = sql.executeQuery();
 		while(r.next()){
 			return r.getInt("ghostLives");
@@ -231,7 +242,7 @@ public class DBHandler {
 	public void resetGhostTimes(String s) throws SQLException {
 		PreparedStatement sql = conn.prepareStatement("UPDATE players SET ghostLives=? WHERE username=?;");
 		sql.setInt(1, 0);
-		sql.setString(2, s);
+		sql.setString(2, s.toLowerCase());
 		sql.executeUpdate();
 		sql.close();
 	}
@@ -240,7 +251,7 @@ public class DBHandler {
 		if(getGhostTimesLeft(s) <= plugin.getConfig().getInt("maxGhostTimes")){
 			PreparedStatement sql = conn.prepareStatement("UPDATE players SET ghostLives=? WHERE username=?;");
 			sql.setInt(1, getGhostTimesLeft(s)+1);
-			sql.setString(2, s);
+			sql.setString(2, s.toLowerCase());
 			sql.executeUpdate();
 			sql.close();
 		}
@@ -307,19 +318,31 @@ public class DBHandler {
 		sql.setString(1, s.toLowerCase());
 		sql.executeUpdate();
 		sql.close();
+		resetPlayer(s.toLowerCase());
 	}
 	
 	public void resetPlayer(String s) throws SQLException{
-		PreparedStatement sql = conn.prepareStatement("UPDATE players SET isGhost=?, timeleft=?, hasEaten=?, lives=?, ghostLives=? WHERE username=?;");
+		PreparedStatement sql = conn.prepareStatement("UPDATE players SET isGhost=?, timeleft=?, hasEaten=?, lives=?, ghostLives=?, resMessageSent=? WHERE username=?;");
 		sql.setBoolean(1, false);
 		sql.setInt(2, 0);
 		sql.setBoolean(3, false);
 		sql.setInt(4, plugin.getConfig().getInt("lives"));
 		sql.setInt(5, 0);
-		sql.setString(6, s);
-		sql.execute();
+		sql.setString(6, s.toLowerCase());
+		sql.setBoolean(7, false);
+		sql.executeUpdate();
 		sql.close();
+		resetGhostTimes(s);
 		cachedGhosts.remove(s);
+	}
+	
+	public void updateLowercase(String s) throws SQLException{
+		PreparedStatement sql = conn.prepareStatement("UPDATE players SET username=? WHERE username=?;");
+		sql.setString(1, s.toLowerCase());
+		sql.setString(2, s);
+		sql.executeUpdate();
+		sql.close();
+		
 	}
 	
 	public void create_tablesConnect() throws SQLException {
@@ -334,6 +357,7 @@ public class DBHandler {
 			plugin.getConfig().set("dbVersion", 1);
 			plugin.saveConfig();
 			plugin.reloadConfig();
+			dbVer = 1;
 		}
 		if(dbVer == 1 && VERSION == 2){
 			plugin.log("updating database from version 1 to 2...");
@@ -346,6 +370,14 @@ public class DBHandler {
 			plugin.saveConfig();
 			plugin.reloadConfig();
 			stat.executeUpdate("DROP TABLE ghosts;");
+		} 
+		if(dbVer == 2 && VERSION == 3){
+			plugin.log("updating databse from version 2 to 3...");
+			for(String s : getPlayers())
+				updateLowercase(s);
+			plugin.getConfig().set("dbVersion", VERSION);
+			plugin.saveConfig();
+			plugin.reloadConfig();
 		}
 	}
 }

@@ -1,6 +1,6 @@
 name: DeathPenalty
 main: com.verybigcorp.deathpenalty.DeathPenalty
-version: 2.1
+version: 2.2
 commands:
    dp: 
       description: DeathPenalty

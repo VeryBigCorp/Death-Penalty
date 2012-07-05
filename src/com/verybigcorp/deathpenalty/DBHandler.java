@@ -25,10 +25,10 @@ public class DBHandler {
 		plugin = p;
 		try {
 			Class.forName("org.sqlite.JDBC");
-			File d = new File(p.getDataFolder() + "ghosts.db");
+			File d = new File(p.getDataFolder() + File.separator + "ghosts.db");
 			if(!d.exists())
 				d.createNewFile();
-			conn = DriverManager.getConnection("jdbc:sqlite:"+ p.getDataFolder() + "ghosts.db");
+			conn = DriverManager.getConnection("jdbc:sqlite:"+ p.getDataFolder() + File.separator + "ghosts.db");
 			conn.setAutoCommit(true);
 			stat = conn.createStatement();
 			create_tablesConnect();

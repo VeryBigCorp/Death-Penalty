@@ -31,14 +31,9 @@ public class DeathPenalty extends JavaPlugin {
 	public boolean isNull = false; // If the ghost spawn location is not set in the configuration
 	public boolean isNull2 = false;
 	public YamlConfiguration spawn = new YamlConfiguration();
-	public DBHandler db = new DBHandler(this);
+	public DBHandler db;
 	public CommandDP dpCommand = new CommandDP(this);
 	public CommandTimeLeft timeleftCommand = new CommandTimeLeft(this);
-	
-	@Override
-	public void onLoad() {
-		setupConfig();
-	}
 	
 	@Override
 	public void onDisable(){
@@ -50,6 +45,10 @@ public class DeathPenalty extends JavaPlugin {
 
 	@Override
 	public void onEnable(){
+		setupConfig();
+		
+		// create a new instance of the database handler
+		db = new DBHandler(this);
 		
 		try {
 			relSpawn();

@@ -3,6 +3,7 @@ package com.verybigcorp.deathpenalty;
 import java.sql.SQLException;
 import java.util.Timer;
 
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
@@ -218,7 +219,7 @@ public class DPListeners implements Listener {
 
 		@EventHandler
 		public void onPlayerMove(final PlayerMoveEvent e){
-			new Thread(new Runnable(){
+			Bukkit.getScheduler().scheduleSyncDelayedTask(p, (new Runnable(){
 
 				@Override
 				public void run() {
@@ -240,7 +241,7 @@ public class DPListeners implements Listener {
 					}
 				}
 
-			}).start();
+			}));
 		}
 
 		@EventHandler

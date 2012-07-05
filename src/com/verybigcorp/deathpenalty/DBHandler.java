@@ -25,9 +25,10 @@ public class DBHandler {
 		plugin = p;
 		try {
 			Class.forName("org.sqlite.JDBC");
-			File d = new File(p.getDataFolder().getCanonicalPath()+"/ghosts.db");
-			d.createNewFile();
-			conn = DriverManager.getConnection("jdbc:sqlite:"+ p.getDataFolder().getCanonicalPath()+"/ghosts.db");
+			File d = new File(p.getDataFolder() + "ghosts.db");
+			if(!d.exists())
+				d.createNewFile();
+			conn = DriverManager.getConnection("jdbc:sqlite:"+ p.getDataFolder() + "ghosts.db");
 			conn.setAutoCommit(true);
 			stat = conn.createStatement();
 			create_tablesConnect();
@@ -36,7 +37,6 @@ public class DBHandler {
 		} catch (SQLException e) {
 			p.log("error in the sql: " + e.getMessage());
 		} catch (ClassNotFoundException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (IOException e) {
 			p.log("error in creation of the database: "+e.getLocalizedMessage());

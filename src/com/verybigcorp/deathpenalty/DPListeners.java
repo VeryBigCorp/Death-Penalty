@@ -17,9 +17,11 @@ import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityTargetEvent;
+import org.bukkit.event.entity.FoodLevelChangeEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.inventory.CraftItemEvent;
-import org.bukkit.event.player.PlayerChatEvent;
+import org.bukkit.event.player.AsyncPlayerChatEvent;
+import org.bukkit.event.player.PlayerBucketEvent;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerExpChangeEvent;
@@ -160,16 +162,12 @@ public class DPListeners implements Listener {
 			}
 		}
 
-		/*@EventHandler
+		@EventHandler
 		public void onFoodLevelChange(FoodLevelChangeEvent e){
-			try {
-				if(db.isGhost((Player)e.getEntity())){
-					//e.setCancelled(true);
-				}
-			} catch (SQLException e1) {
-				
+			if(p.db.isGhost((Player)e.getEntity())){
+				e.setCancelled(true);
 			}
-		}*/
+		}
 
 		@EventHandler
 		public void onBlockBreak(BlockBreakEvent e){
@@ -206,16 +204,12 @@ public class DPListeners implements Listener {
 				e.setCancelled(true);
 		}
 
-		/*@EventHandler
+		@EventHandler
 		public void onPlayerBucketEvent(PlayerBucketEvent e){
-			try {
-				if(db.isGhost(e.getPlayer())){
+				if(p.db.isGhost(e.getPlayer())){
 					e.setCancelled(true);
 				}
-			} catch (SQLException e1) {
-				
-			}
-		}*/
+		}
 
 		@EventHandler
 		public void onPlayerMove(final PlayerMoveEvent e){
@@ -223,9 +217,8 @@ public class DPListeners implements Listener {
 
 				@Override
 				public void run() {
-					// TODO Auto-generated method stub
 					try {
-						if(p.db.isGhost(e.getPlayer()) && p.db.getTimeLeft(e.getPlayer().getName()) == 0){
+						if(p.db.isGhost(e.getPlayer()) && (p.db.getTimeLeft(e.getPlayer().getName()) == 0)) {
 							Player pl = e.getPlayer();
 							p.db.removeGhost(pl.getName());
 							if(p.getPlayer(pl.getName()) != null){
@@ -281,7 +274,7 @@ public class DPListeners implements Listener {
 		}
 
 		@EventHandler
-		public void onPlayerChat(PlayerChatEvent e){
+		public void onPlayerChat(AsyncPlayerChatEvent e){
 			if(p.db.isGhost(e.getPlayer())){
 				for(org.bukkit.World w : p.getServer().getWorlds())
 					for(Player pl : w.getPlayers())

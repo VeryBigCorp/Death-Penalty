@@ -32,8 +32,8 @@ public class CommandDP implements CommandExecutor {
 					plugin.spawn.set("ghostSpawn", ((Player)sender).getLocation().toVector());
 					plugin.spawn.set("world", ((Player)sender).getLocation().getWorld().getName());
 					try {
-						plugin.saveSpawn();
-						plugin.relSpawn();
+						plugin.saveSpawnConfig();
+						plugin.reloadSpawnConfig();
 					} catch (IOException e) {
 
 					}
@@ -58,8 +58,8 @@ public class CommandDP implements CommandExecutor {
 					plugin.spawn.set("pSpawn", ((Player)sender).getLocation().toVector());
 					plugin.spawn.set("pWorld", ((Player)sender).getLocation().getWorld().getName());
 					try {
-						plugin.saveSpawn();
-						plugin.relSpawn();
+						plugin.saveSpawnConfig();
+						plugin.reloadSpawnConfig();
 					} catch (IOException e) {
 
 					}
@@ -92,7 +92,7 @@ public class CommandDP implements CommandExecutor {
 					if(sender instanceof Player)
 						return false;
 					try {
-						plugin.relSpawn();
+						plugin.reloadSpawnConfig();
 						plugin.reloadConfig();
 						sender.sendMessage("Configuration reloaded.");
 

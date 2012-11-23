@@ -51,11 +51,11 @@ public class DeathPenalty extends JavaPlugin {
 		db = new DBHandler(this);
 		
 		try {
-			relSpawn();
+			reloadSpawnConfig();
 			spawn.set("world", spawn.getString("world"));
 			spawn.set("ghostSpawn", spawn.getVector("ghostSpawn"));
-			saveSpawn();
-			relSpawn();
+			saveSpawnConfig();
+			reloadSpawnConfig();
 		} catch (IOException e) {
 			log("error in the creation of the database! " + e.getMessage());
 		}
@@ -97,13 +97,13 @@ public class DeathPenalty extends JavaPlugin {
 		log.info(s);
 	}
 
-	public void relSpawn() throws IOException {
+	public void reloadSpawnConfig() throws IOException {
 		File f = new File(getDataFolder(), "ghostSpawn.yml");
 		f.createNewFile();
 		spawn = YamlConfiguration.loadConfiguration(f);
 	}
 
-	public void saveSpawn() throws IOException {
+	public void saveSpawnConfig() throws IOException {
 		if(spawn != null)
 			spawn.save(new File(getDataFolder(), "ghostSpawn.yml"));
 	}

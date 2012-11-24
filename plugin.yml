@@ -5,8 +5,8 @@ commands:
    dp: 
       description: DeathPenalty
       permission: 
-      usage:
+      usage: /dp help
    timeleft: 
       description: Get the time left if you're a ghost
       permission: 
-      usage:
+      usage: /timeleft

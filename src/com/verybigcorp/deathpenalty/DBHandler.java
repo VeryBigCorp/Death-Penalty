@@ -25,9 +25,10 @@ public class DBHandler {
 		plugin = p;
 		try {
 			Class.forName("org.sqlite.JDBC");
-			File d = new File(p.getDataFolder().getCanonicalPath()+"/ghosts.db");
-			d.createNewFile();
-			conn = DriverManager.getConnection("jdbc:sqlite:"+ p.getDataFolder().getCanonicalPath()+"/ghosts.db");
+			File d = new File(p.getDataFolder() + File.separator + "ghosts.db");
+			if(!d.exists())
+				d.createNewFile();
+			conn = DriverManager.getConnection("jdbc:sqlite:"+ p.getDataFolder() + File.separator + "ghosts.db");
 			conn.setAutoCommit(true);
 			stat = conn.createStatement();
 			create_tablesConnect();
@@ -36,7 +37,6 @@ public class DBHandler {
 		} catch (SQLException e) {
 			p.log("error in the sql: " + e.getMessage());
 		} catch (ClassNotFoundException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (IOException e) {
 			p.log("error in creation of the database: "+e.getLocalizedMessage());
@@ -174,7 +174,10 @@ public class DBHandler {
 	public boolean isGhost(Player p) {
 		return cachedGhosts.contains(p.getName());
 	}
-
+	
+	public boolean isGhost(String name) {
+		return cachedGhosts.contains(name);
+	}
 
 	public void removeGhost(String s) throws SQLException {
 		removeCached(s);
@@ -219,22 +222,30 @@ public class DBHandler {
 		return -1;
 	}
 
-	public void resetLives(String s) throws SQLException{
-		PreparedStatement sql = conn.prepareStatement("UPDATE players SET lives=? WHERE username=?;");
-		sql.setInt(1, plugin.getConfig().getInt("lives"));
-		sql.setString(2, s);
-		sql.executeUpdate();
-		sql.close();
+	public void resetLives(String s) {
+		try {
+			PreparedStatement sql = conn.prepareStatement("UPDATE players SET lives=? WHERE username=?;");
+			sql.setInt(1, plugin.getConfig().getInt("lives"));
+			sql.setString(2, s);
+			sql.executeUpdate();
+			sql.close();
+		} catch(Exception e) {
+			e.printStackTrace();
+		}
 	}
 
-	public int getGhostTimesLeft(String s) throws SQLException {
-		PreparedStatement sql = conn.prepareStatement("SELECT * FROM players WHERE username=?;");
-		sql.setString(1, s);
-		ResultSet r = sql.executeQuery();
-		while(r.next()){
-			return r.getInt("ghostLives");
+	public int getGhostTimesLeft(String s) {
+		try {
+			PreparedStatement sql = conn.prepareStatement("SELECT * FROM players WHERE username=?;");
+			sql.setString(1, s);
+			ResultSet r = sql.executeQuery();
+			while(r.next()){
+				return r.getInt("ghostLives");
+			}
+			sql.close();
+		} catch(Exception e) {
+			e.printStackTrace();
 		}
-		sql.close();
 		return 0;
 	}
 

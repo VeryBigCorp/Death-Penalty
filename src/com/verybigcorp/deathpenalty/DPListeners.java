@@ -127,17 +127,13 @@ public class DPListeners implements Listener {
 
 		@EventHandler(priority = EventPriority.HIGHEST)
 		public void onPlayerRespawn(final PlayerRespawnEvent e){
-				try {
-					if(plugin.db.isGhost(e.getPlayer()) && !plugin.isNull){
-						e.setRespawnLocation(((Vector) plugin.spawn.get("ghostSpawn")).toLocation(plugin.getServer().getWorld(plugin.spawn.getString("world"))));
-						if(plugin.getConfig().getBoolean("ghostsFly"))
-							e.getPlayer().setGameMode(GameMode.CREATIVE);
-					}
-					if(plugin.db.getGhostTimesLeft(e.getPlayer().getName()) > plugin.getConfig().getInt("maxGhostTimes") || !plugin.getConfig().getBoolean("banOnGhostLifeDepletion"))
-						plugin.db.resetLives(e.getPlayer().getName());
-				} catch (SQLException e1) {
-
-				}
+			if(plugin.db.isGhost(e.getPlayer()) && !plugin.isGhostSpawnLocationNotSet){
+				e.setRespawnLocation(((Vector) plugin.spawn.get("ghostSpawn")).toLocation(plugin.getServer().getWorld(plugin.spawn.getString("world"))));
+				if(plugin.getConfig().getBoolean("ghostsFly"))
+					e.getPlayer().setGameMode(GameMode.CREATIVE);
+			}
+			if(plugin.db.getGhostTimesLeft(e.getPlayer().getName()) > plugin.getConfig().getInt("maxGhostTimes") || !plugin.getConfig().getBoolean("banOnGhostLifeDepletion"))
+				plugin.db.resetLives(e.getPlayer().getName());
 		}
 
 

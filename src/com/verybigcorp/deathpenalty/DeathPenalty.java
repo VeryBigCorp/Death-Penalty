@@ -27,8 +27,8 @@ public class DeathPenalty extends JavaPlugin {
 	public GhostTimer g = new GhostTimer(this);
 	Timer gtimer = new Timer();
 	public boolean debugMode = false;
-	public boolean isNull = false; // If the ghost spawn location is not set in the configuration
-	public boolean isNull2 = false;
+	public boolean isGhostSpawnLocationNotSet = false;
+	public boolean isPlayerSpawnLocationNotSet = false;
 	public YamlConfiguration spawn = new YamlConfiguration();
 	public DBHandler db;
 	public CommandDP dpCommand = new CommandDP(this);
@@ -46,8 +46,6 @@ public class DeathPenalty extends JavaPlugin {
 	@Override
 	public void onEnable(){
 		setupConfig();
-		
-		// create a new instance of the database handler
 		db = new DBHandler(this);
 		
 		try {
@@ -70,8 +68,8 @@ public class DeathPenalty extends JavaPlugin {
 		
 		if(!getConfig().getBoolean("permaGhost"))
 			gtimer.schedule(g, 1000, 1000);
-		isNull = spawn.getVector("ghostSpawn") == null;
-		isNull2 = spawn.getVector("pSpawn") == null;
+		isGhostSpawnLocationNotSet = spawn.getVector("ghostSpawn") == null;
+		isPlayerSpawnLocationNotSet = spawn.getVector("pSpawn") == null;
 		log("v"+ this.getDescription().getVersion() + "is now enabled.");
 	}
 	
@@ -116,7 +114,7 @@ public class DeathPenalty extends JavaPlugin {
 
 	public Location res(Player p){
 		Location loc = p.getLocation();
-		if(!isNull2){
+		if(!isPlayerSpawnLocationNotSet){
 			loc = spawn.getVector("pSpawn").toLocation(getServer().getWorld(spawn.getString("pWorld")));
 			while(!loc.getChunk().isLoaded()) loc.getChunk().load();
 		}

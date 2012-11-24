@@ -37,7 +37,7 @@ public class CommandDP implements CommandExecutor {
 					} catch (IOException e) {
 
 					}
-					plugin.isNull = false;
+					plugin.isGhostSpawnLocationNotSet = false;
 					sender.sendMessage(ChatColor.GREEN + "Ghost spawn location set!");
 					return true;
 				} else if(plugin.debugMode && args[0].equalsIgnoreCase("dump")){
@@ -63,7 +63,7 @@ public class CommandDP implements CommandExecutor {
 					} catch (IOException e) {
 
 					}
-					plugin.isNull2 = false;
+					plugin.isPlayerSpawnLocationNotSet = false;
 					sender.sendMessage(ChatColor.GREEN + "Player respawn location set!");
 					return true;
 				} else if(args[0].equalsIgnoreCase("dump")){

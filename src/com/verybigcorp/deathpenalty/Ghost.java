@@ -13,19 +13,19 @@ public class Ghost {
 		this.plugin = plugin;
 	}
 
-	public void hideGhost(String s) throws SQLException{
-		Player[] arr = plugin.getServer().getOnlinePlayers();
-		for(int x = 0; x < arr.length; x++)
-			if(plugin.getPlayer(arr[x].getName()) != null && !plugin.db.isGhost(arr[x]) && !arr[x].hasPermission("deathpenalty.see"))
-				arr[x].hidePlayer(plugin.getPlayer(s));
+	public void hideGhost(String s) {
+		Player[] onlinePlayers = plugin.getServer().getOnlinePlayers();
+		for(Player p : onlinePlayers)
+			if(!plugin.db.isGhost(p) && !p.hasPermission("deathpenalty.see"))
+				p.hidePlayer(plugin.getPlayer(s));
 	}
 
-	public void revealGhost(String s) throws SQLException {
-		Player[] arr = plugin.getServer().getOnlinePlayers();
-		for(int x = 0; x < arr.length; x++)
-			if(plugin.getPlayer(arr[x].getName()) != null && !arr[x].canSee(plugin.getPlayer(s)))
-				arr[x].showPlayer(plugin.getPlayer(s));
-		if(plugin.getConfig().getBoolean("ghostsFly")){
+	public void revealGhost(String s) {
+		Player[] onlinePlayers = plugin.getServer().getOnlinePlayers();
+		for(Player p : onlinePlayers)
+			if(!p.canSee(plugin.getPlayer(s)))
+				p.showPlayer(plugin.getPlayer(s));
+		if(!plugin.getConfig().getBoolean("ghostsFly")){
 			plugin.getPlayer(s).setGameMode(GameMode.SURVIVAL);
 			plugin.getPlayer(s).getInventory().clear();
 		}
@@ -37,5 +37,9 @@ public class Ghost {
 			if(plugin.getPlayer(s) != null)
 				this.hideGhost(s);
 		}
+	}
+	
+	public boolean isGhost(String name) {
+		return plugin.db.isGhost(name);
 	}
 }

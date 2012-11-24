@@ -40,23 +40,23 @@ import org.bukkit.util.Vector;
 import com.verybigcorp.deathpenalty.timing.DelayedHide;
 
 public class DPListeners implements Listener {
-		DeathPenalty p;
+		DeathPenalty plugin;
 		public DPListeners(DeathPenalty plugin){
-			p = plugin;
+			this.plugin = plugin;
 		}
 
 		@EventHandler
 		public void onPlayerJoin(final PlayerJoinEvent e){
 				try {
-					p.db.addPlayer(e.getPlayer().getName());
-					if(p.db.isGhost(e.getPlayer())){
+					plugin.db.addPlayer(e.getPlayer().getName());
+					if(plugin.db.isGhost(e.getPlayer())){
 						e.getPlayer().sendMessage("You are a ghost.");
-						if(p.db.getTimeLeft(e.getPlayer().getName()) <= 0)
-							e.getPlayer().sendMessage(ChatColor.GRAY + "Your time is up. Move to be resurrected. " + p.resAppend(e.getPlayer().getName()));
-						if(p.getConfig().getBoolean("ghostsFly"))
+						if(plugin.db.getTimeLeft(e.getPlayer().getName()) <= 0)
+							e.getPlayer().sendMessage(ChatColor.GRAY + "Your time is up. Move to be resurrected. " + plugin.resAppend(e.getPlayer().getName()));
+						if(plugin.getConfig().getBoolean("ghostsFly"))
 							e.getPlayer().setGameMode(GameMode.CREATIVE);
 					}
-					new Timer().schedule(new DelayedHide(p), 2000);
+					new Timer().schedule(new DelayedHide(plugin), 2000);
 				} catch (SQLException e1) {
 
 				}
@@ -65,8 +65,8 @@ public class DPListeners implements Listener {
 		@EventHandler
 		public void onPlayerLogin(PlayerLoginEvent e){
 			try {
-				if(p.db.isBanned(e.getPlayer().getName())){
-					e.disallow(Result.KICK_OTHER, "You are still banned for " + p.formatSeconds(p.db.banTimeLeft(e.getPlayer().getName())));
+				if(plugin.db.isBanned(e.getPlayer().getName())){
+					e.disallow(Result.KICK_OTHER, "You are still banned for " + plugin.formatSeconds(plugin.db.banTimeLeft(e.getPlayer().getName())));
 				}
 			} catch (SQLException e1) {
 
@@ -80,20 +80,20 @@ public class DPListeners implements Listener {
 
 				@Override
 				public void run() {
-					if(p.db.isGhost(e1.getEntity()))
+					if(plugin.db.isGhost(e1.getEntity()))
 						return;
-					if(p.hasPermission(e1.getEntity(), "deathpenalty.ignore", false))
+					if(plugin.hasPermission(e1.getEntity(), "deathpenalty.ignore", false))
 						return;
 		            try {
 
-						if(p.db.decrementLives(e1.getEntity().getName()) <= 0){
-							p.db.addGhost(e1.getEntity().getName());
-							p.hideGhost(e1.getEntity().getName());
+						if(plugin.db.decrementLives(e1.getEntity().getName()) <= 0){
+							plugin.db.addGhost(e1.getEntity().getName());
+							plugin.ghosts.hideGhost(e1.getEntity().getName());
 				            e1.getEntity().sendMessage(ChatColor.GRAY + "You have become a ghost of your former self. To see how much time you have left, type in /timeleft");
-				            if(p.getConfig().getBoolean("banOnGhostLifeDepletion"))
-				            	p.db.increaseGhostTimes(e1.getEntity().getName());
+				            if(plugin.getConfig().getBoolean("banOnGhostLifeDepletion"))
+				            	plugin.db.increaseGhostTimes(e1.getEntity().getName());
 						} else {
-							int lives = p.db.nLives(e1.getEntity().getName());
+							int lives = plugin.db.nLives(e1.getEntity().getName());
 							String life = " lives";
 							if(lives == 1)
 								life = " life";
@@ -101,14 +101,14 @@ public class DPListeners implements Listener {
 						}
 
 
-						if(p.db.getGhostTimesLeft(e1.getEntity().getName()) > p.getConfig().getInt("maxGhostTimes") && p.getConfig().getBoolean("banOnGhostLifeDepletion")){
-							p.revealGhost(e1.getEntity().getName());
-							p.db.ban(e1.getEntity().getName());
-							e1.getEntity().kickPlayer("You have died. You may rejoin in " + p.formatSeconds(p.db.banTimeLeft(e1.getEntity().getName())));
-							p.db.resetPlayer(e1.getEntity().getName());
+						if(plugin.db.getGhostTimesLeft(e1.getEntity().getName()) > plugin.getConfig().getInt("maxGhostTimes") && plugin.getConfig().getBoolean("banOnGhostLifeDepletion")){
+							plugin.ghosts.revealGhost(e1.getEntity().getName());
+							plugin.db.ban(e1.getEntity().getName());
+							e1.getEntity().kickPlayer("You have died. You may rejoin in " + plugin.formatSeconds(plugin.db.banTimeLeft(e1.getEntity().getName())));
+							plugin.db.resetPlayer(e1.getEntity().getName());
 						}
 					} catch (SQLException e1) {
-						p.log("sql error!" + e1.getMessage());
+						plugin.log("sql error!" + e1.getMessage());
 					}
 
 				}
@@ -120,7 +120,7 @@ public class DPListeners implements Listener {
 		@EventHandler
 		public void onEntityTarget(EntityTargetEvent e){
 			if(e.getTarget() instanceof Player){
-				if(p.db.isGhost((Player)e.getTarget()))
+				if(plugin.db.isGhost((Player)e.getTarget()))
 					e.setTarget(null);
 			}
 		}
@@ -128,13 +128,13 @@ public class DPListeners implements Listener {
 		@EventHandler(priority = EventPriority.HIGHEST)
 		public void onPlayerRespawn(final PlayerRespawnEvent e){
 				try {
-					if(p.db.isGhost(e.getPlayer()) && !p.isNull){
-						e.setRespawnLocation(((Vector) p.spawn.get("ghostSpawn")).toLocation(p.getServer().getWorld(p.spawn.getString("world"))));
-						if(p.getConfig().getBoolean("ghostsFly"))
+					if(plugin.db.isGhost(e.getPlayer()) && !plugin.isNull){
+						e.setRespawnLocation(((Vector) plugin.spawn.get("ghostSpawn")).toLocation(plugin.getServer().getWorld(plugin.spawn.getString("world"))));
+						if(plugin.getConfig().getBoolean("ghostsFly"))
 							e.getPlayer().setGameMode(GameMode.CREATIVE);
 					}
-					if(p.db.getGhostTimesLeft(e.getPlayer().getName()) > p.getConfig().getInt("maxGhostTimes") || !p.getConfig().getBoolean("banOnGhostLifeDepletion"))
-						p.db.resetLives(e.getPlayer().getName());
+					if(plugin.db.getGhostTimesLeft(e.getPlayer().getName()) > plugin.getConfig().getInt("maxGhostTimes") || !plugin.getConfig().getBoolean("banOnGhostLifeDepletion"))
+						plugin.db.resetLives(e.getPlayer().getName());
 				} catch (SQLException e1) {
 
 				}
@@ -143,35 +143,35 @@ public class DPListeners implements Listener {
 
 		@EventHandler
 		public void onPlayerExpChange(PlayerExpChangeEvent e){
-			if(p.db.isGhost(e.getPlayer())){
+			if(plugin.db.isGhost(e.getPlayer())){
 				e.setAmount(0);
 			}
 		}
 
 		@EventHandler
 		public void onPlayerDropItem(PlayerDropItemEvent e) {
-			if(p.db.isGhost(e.getPlayer())){
+			if(plugin.db.isGhost(e.getPlayer())){
 				e.setCancelled(true);
 			}
 		}
 
 		@EventHandler
 		public void onBlockPlace(BlockPlaceEvent e){
-			if(p.db.isGhost(e.getPlayer())){
+			if(plugin.db.isGhost(e.getPlayer())){
 				e.setCancelled(true);
 			}
 		}
 
 		@EventHandler
 		public void onFoodLevelChange(FoodLevelChangeEvent e){
-			if(p.db.isGhost((Player)e.getEntity())){
+			if(plugin.db.isGhost((Player)e.getEntity())){
 				e.setCancelled(true);
 			}
 		}
 
 		@EventHandler
 		public void onBlockBreak(BlockBreakEvent e){
-			if(p.db.isGhost(e.getPlayer())){
+			if(plugin.db.isGhost(e.getPlayer())){
 				e.setCancelled(true);
 			}
 		}
@@ -179,14 +179,14 @@ public class DPListeners implements Listener {
 		@EventHandler
 		public void onPlayerInteract(final PlayerInteractEvent e){
 				try {
-					if(p.db.isGhost(e.getPlayer())){
+					if(plugin.db.isGhost(e.getPlayer())){
 						if(e.getAction() == Action.RIGHT_CLICK_BLOCK){
-							if(e.getClickedBlock().getType().equals(Material.CAKE_BLOCK) && !p.db.hasEaten(e.getPlayer().getName()) && p.getConfig().getInt("cakeAmount") > 0 && !p.getConfig().getBoolean("permaGhost")){
-								p.db.setHasEaten(e.getPlayer().getName());
-								e.getPlayer().sendMessage(ChatColor.GRAY + "Your ghost time has decreased by " + p.formatSeconds(p.getConfig().getInt("cakeAmount")) + " seconds!");
-								if(p.db.decrementTime(e.getPlayer().getName(), p.getConfig().getInt("cakeAmount")) <= 0){
-									if(p.getPlayer(e.getPlayer().getName()) != null){
-										p.getPlayer(e.getPlayer().getName()).sendMessage(ChatColor.GRAY + "Your time is up. Move to be resurrected. " + p.resAppend(e.getPlayer().getName()));
+							if(e.getClickedBlock().getType().equals(Material.CAKE_BLOCK) && !plugin.db.hasEaten(e.getPlayer().getName()) && plugin.getConfig().getInt("cakeAmount") > 0 && !plugin.getConfig().getBoolean("permaGhost")){
+								plugin.db.setHasEaten(e.getPlayer().getName());
+								e.getPlayer().sendMessage(ChatColor.GRAY + "Your ghost time has decreased by " + plugin.formatSeconds(plugin.getConfig().getInt("cakeAmount")) + " seconds!");
+								if(plugin.db.decrementTime(e.getPlayer().getName(), plugin.getConfig().getInt("cakeAmount")) <= 0){
+									if(plugin.getPlayer(e.getPlayer().getName()) != null){
+										plugin.getPlayer(e.getPlayer().getName()).sendMessage(ChatColor.GRAY + "Your time is up. Move to be resurrected. " + plugin.resAppend(e.getPlayer().getName()));
 									}
 								}
 							}
@@ -200,32 +200,32 @@ public class DPListeners implements Listener {
 
 		@EventHandler
 		public void onPlayerInteractEntity(PlayerInteractEntityEvent e){
-			if(p.db.isGhost(e.getPlayer()))
+			if(plugin.db.isGhost(e.getPlayer()))
 				e.setCancelled(true);
 		}
 
 		@EventHandler
 		public void onPlayerBucketEvent(PlayerBucketEvent e){
-				if(p.db.isGhost(e.getPlayer())){
+				if(plugin.db.isGhost(e.getPlayer())){
 					e.setCancelled(true);
 				}
 		}
 
 		@EventHandler
 		public void onPlayerMove(final PlayerMoveEvent e){
-			Bukkit.getScheduler().scheduleSyncDelayedTask(p, (new Runnable(){
+			Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, (new Runnable(){
 
 				@Override
 				public void run() {
 					try {
-						if(p.db.isGhost(e.getPlayer()) && (p.db.getTimeLeft(e.getPlayer().getName()) == 0)) {
+						if(plugin.db.isGhost(e.getPlayer()) && (plugin.db.getTimeLeft(e.getPlayer().getName()) == 0)) {
 							Player pl = e.getPlayer();
-							p.db.removeGhost(pl.getName());
-							if(p.getPlayer(pl.getName()) != null){
-								p.getPlayer(pl.getName()).sendMessage("You have been reinstated as a person.");
+							plugin.db.removeGhost(pl.getName());
+							if(plugin.getPlayer(pl.getName()) != null){
+								plugin.getPlayer(pl.getName()).sendMessage("You have been reinstated as a person.");
 								synchronized (this){
-									p.getPlayer(pl.getName()).teleport(p.res(p.getPlayer(pl.getName())));
-									p.revealGhost(pl.getName());
+									plugin.getPlayer(pl.getName()).teleport(plugin.res(plugin.getPlayer(pl.getName())));
+									plugin.ghosts.revealGhost(pl.getName());
 								}
 							}
 						}
@@ -239,21 +239,21 @@ public class DPListeners implements Listener {
 
 		@EventHandler
 		public void onCraftItem(CraftItemEvent e){
-			if(p.db.isGhost(p.getServer().getPlayer(e.getWhoClicked().getName()))){
+			if(plugin.db.isGhost(plugin.getServer().getPlayer(e.getWhoClicked().getName()))){
 				e.setCancelled(true);
 			}
 		}
 
 		@EventHandler
 		public void onPlayerPickupItem(PlayerPickupItemEvent e){
-			if(p.db.isGhost(e.getPlayer())){
+			if(plugin.db.isGhost(e.getPlayer())){
 				e.setCancelled(true);
 			}
 		}
 
 		@EventHandler
 		public void onEntityDamageByEntity(EntityDamageByEntityEvent e){
-			if(e.getDamager() instanceof Player && p.db.isGhost((Player)e.getDamager())){
+			if(e.getDamager() instanceof Player && plugin.db.isGhost((Player)e.getDamager())){
 				e.setCancelled(true);
 			}
 		}
@@ -261,24 +261,24 @@ public class DPListeners implements Listener {
 		@EventHandler
 		public void onPlayerCommandPreprocess(PlayerCommandPreprocessEvent e){
 			if(!e.getMessage().equals("/timeleft")){
-				if(p.db.isGhost(e.getPlayer()))
+				if(plugin.db.isGhost(e.getPlayer()))
 					e.setCancelled(true);
 			}
 		}
 
 		@EventHandler
 		public void onEntityDamage(EntityDamageEvent e){
-			if(e.getEntity() instanceof Player && p.db.isGhost((Player)e.getEntity())){
+			if(e.getEntity() instanceof Player && plugin.db.isGhost((Player)e.getEntity())){
 				e.setCancelled(true);
 			}
 		}
 
 		@EventHandler
 		public void onPlayerChat(AsyncPlayerChatEvent e){
-			if(p.db.isGhost(e.getPlayer())){
-				for(org.bukkit.World w : p.getServer().getWorlds())
+			if(plugin.db.isGhost(e.getPlayer())){
+				for(org.bukkit.World w : plugin.getServer().getWorlds())
 					for(Player pl : w.getPlayers())
-						if(p.db.isGhost(pl) || p.hasPermission(pl, "deathpenalty.hearghosts", true))
+						if(plugin.db.isGhost(pl) || plugin.hasPermission(pl, "deathpenalty.hearghosts", true))
 							pl.sendMessage("[Ghost of "+e.getPlayer().getDisplayName()+  "] " + ChatColor.GRAY + e.getMessage());
 				e.setCancelled(true);
 			}
@@ -286,7 +286,7 @@ public class DPListeners implements Listener {
 
 		@EventHandler
 		public void onPlayerTeleport(PlayerTeleportEvent e){
-			if(p.db.isGhost(e.getPlayer()) && p.getConfig().getBoolean("disablePortals") && e.getCause().equals(TeleportCause.END_PORTAL) || e.getCause().equals(TeleportCause.NETHER_PORTAL))
+			if(plugin.db.isGhost(e.getPlayer()) && plugin.getConfig().getBoolean("disablePortals") && e.getCause().equals(TeleportCause.END_PORTAL) || e.getCause().equals(TeleportCause.NETHER_PORTAL))
 				e.setCancelled(true);
 		}
 

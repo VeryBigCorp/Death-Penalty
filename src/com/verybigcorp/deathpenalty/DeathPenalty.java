@@ -7,19 +7,18 @@ import java.util.Timer;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
-import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import ru.tehkode.permissions.PermissionManager;
+import ru.tehkode.permissions.bukkit.PermissionsEx;
+
 import com.verybigcorp.deathpenalty.commands.CommandDP;
 import com.verybigcorp.deathpenalty.commands.CommandTimeLeft;
 import com.verybigcorp.deathpenalty.timing.GhostTimer;
-
-import ru.tehkode.permissions.PermissionManager;
-import ru.tehkode.permissions.bukkit.PermissionsEx;
 
 public class DeathPenalty extends JavaPlugin {
 	Logger log;
@@ -34,6 +33,7 @@ public class DeathPenalty extends JavaPlugin {
 	public DBHandler db;
 	public CommandDP dpCommand = new CommandDP(this);
 	public CommandTimeLeft timeleftCommand = new CommandTimeLeft(this);
+	public Ghost ghosts = new Ghost(this);
 	
 	@Override
 	public void onDisable(){
@@ -140,41 +140,9 @@ public class DeathPenalty extends JavaPlugin {
 
 
 	public Player getPlayer(String name){
-		/*Player pl = null;
-		for(int x = 0; x < getServer().getWorlds().size(); x++){
-			for(int y = 0; y < getServer().getWorlds().get(x).getPlayers().size(); y++)
-				if(getServer().getWorlds().get(x).getPlayers().get(y).getName().equalsIgnoreCase(name))
-					pl = getServer().getWorlds().get(x).getPlayers().get(y);
-		}*/
 		return getServer().getPlayer(name);
 	}
 
-	public void hideGhost(String s) throws SQLException{
-		Player[] arr = getServer().getOnlinePlayers();
-		for(int x = 0; x < arr.length; x++)
-			if(getPlayer(arr[x].getName()) != null && !db.isGhost(arr[x]) && !arr[x].hasPermission("deathpenalty.see"))
-				arr[x].hidePlayer(getPlayer(s));
-	}
-
-	public void revealGhost(String s) throws SQLException {
-		Player[] arr = getServer().getOnlinePlayers();
-		for(int x = 0; x < arr.length; x++)
-			if(getPlayer(arr[x].getName()) != null && !arr[x].canSee(getPlayer(s)))
-				arr[x].showPlayer(getPlayer(s));
-		if(getConfig().getBoolean("ghostsFly")){
-			getPlayer(s).setGameMode(GameMode.SURVIVAL);
-			getPlayer(s).getInventory().clear();
-		}
-		db.resetLives(s);
-	}
-
-	public void hideGhosts() throws SQLException {
-		for(String s : db.getCachedGhosts()){
-			if(getPlayer(s) != null)
-				hideGhost(s);
-		}
-	}
-	
 	public String resAppend(String p) throws SQLException{
 		String s = "";
 		int tleft = getConfig().getInt("maxGhostTimes") - db.getGhostTimesLeft(p);

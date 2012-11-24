@@ -31,4 +31,11 @@ public class Ghost {
 		}
 		plugin.db.resetLives(s);
 	}
+	
+	public void hideGhosts() throws SQLException {
+		for(String s : plugin.db.getCachedGhosts()){
+			if(plugin.getPlayer(s) != null)
+				this.hideGhost(s);
+		}
+	}
 }

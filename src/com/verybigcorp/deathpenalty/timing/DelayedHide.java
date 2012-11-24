@@ -16,7 +16,7 @@ public class DelayedHide extends TimerTask {
 	@Override
 	public void run(){
 		try {
-			plugin.hideGhosts();
+			plugin.ghosts.hideGhosts();
 		} catch (SQLException e) {
 
 		}

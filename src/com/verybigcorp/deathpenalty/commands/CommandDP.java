@@ -82,7 +82,7 @@ public class CommandDP implements CommandExecutor {
 				} else if(args[0].equalsIgnoreCase("fixghosts")){
 					if(!(sender instanceof Player)){
 						try {
-							plugin.hideGhosts();
+							plugin.ghosts.hideGhosts();
 							plugin.log("Ghosts are now hidden.");
 						} catch (SQLException e) {
 							plugin.log("Unable to fix ghosts. Please try again or report this error.");

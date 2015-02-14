@@ -1,3 +1,3 @@
 # Death-Penalty
 
-A mod for Minecraft that adds fun features for players who die.
+A mod for Minecraft that adds fun features for players who die in-game.
